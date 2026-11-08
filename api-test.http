@@ -1,1 +1,1 @@
-GET http://localhost:3000/hello?keyword=World
+POST  http://localhost:3000/?game_id=0&action=unfreeze
