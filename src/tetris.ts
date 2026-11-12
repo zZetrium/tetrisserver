@@ -6,14 +6,17 @@ export enum Field {
   Filled = "FILLED",
 }
 
+const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
+
+
 export class Game {
   fields: Field[][] = new Array(WIDTH).fill(false).map(() => new Array(HEIGHT).fill(Field.Empty));
   cur_piece: Field[][] = new Array(4).fill(false).map(() => new Array(4).fill(Field.Empty));
   //cur_pos: [number, number] = [0, -];
   cur_x: number = 0;
   cur_y: number = -1;
-  score:number = 0;
-  actions:number = 0;
+  score: number = 0;
+  actions: number = 0;
 
   constructor() {
     this.new_piece();
@@ -32,6 +35,9 @@ export class Game {
   }
 
   move(size: number) {
+    if (this.actions < 1) {
+      return;
+    }
     /* for (let i = 0; i < 4; i++) {
        if (this.cur_x + i + size < 0 || this.cur_x + i + size >= WIDTH) {
          for (let j = 0; j < 4; j++) {
@@ -44,7 +50,9 @@ export class Game {
     this.cur_x += size;
     if (this.collides_or_oob()) {
       this.cur_x -= size;
+      return;
     }
+    this.actions--;
   }
 
   move_right() {
@@ -52,17 +60,29 @@ export class Game {
   }
 
   rotate_cw() {
+    if (this.actions < 1) {
+      return;
+    }
     rotateCw(this.cur_piece);
     if (this.collides_or_oob()) {
       rotateCcw(this.cur_piece);
+      return;
     }
+        this.actions--;
+
   }
 
   rotate_ccw() {
+    if (this.actions < 1) {
+      return;
+    }
     rotateCcw(this.cur_piece);
     if (this.collides_or_oob()) {
       rotateCw(this.cur_piece);
+      return;
     }
+        this.actions--;
+
   }
 
   move_down() {
@@ -189,7 +209,7 @@ export class Game {
     if (this.collides()) {
       this.cur_y -= 1;
       this.place();
-      this.cur_x = 0;
+      this.cur_x = clamp(this.cur_x,0,WIDTH-4);
       this.cur_y = 0;
       this.new_piece();
       if (this.collides()) {

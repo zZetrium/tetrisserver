@@ -10,7 +10,7 @@ const os_1 = __importDefault(require("os"));
 let TEAM_COUNT = 4;
 const UPDATE_INTERVAL = 600;
 let TICK_INTERVAL = 600;
-let freeze = false;
+let freeze = true;
 let games = (() => {
     let games = [];
     for (let i = 0; i < 4; i++) {
@@ -19,15 +19,25 @@ let games = (() => {
     return games;
 })();
 let tick_counter = 0;
+let SAVE_INTERVAL = 30_000;
+let save_counter = 0;
 setInterval(async () => {
     if (freeze) {
         return;
     }
     tick_counter += UPDATE_INTERVAL;
-    /*while (tick_counter >= TICK_INTERVAL) {
-      tick_counter -= TICK_INTERVAL;
-      games[i].tick();
-    }*/
+    save_counter += UPDATE_INTERVAL;
+    if (save_counter >= SAVE_INTERVAL) {
+        tick_counter %= TICK_INTERVAL;
+        node_fs_1.default.writeFile(os_1.default.tmpdir() + "\\jamasoauto.json", JSON.stringify(games), err => {
+            if (err) {
+                console.error(err);
+            }
+            else {
+                // file written successfully
+            }
+        });
+    }
     let tick_count = Math.floor(tick_counter / TICK_INTERVAL);
     tick_counter %= TICK_INTERVAL;
     for (let i = 0; i < TEAM_COUNT; i++) {
@@ -55,10 +65,14 @@ const handler = async (req, res) => {
     let game_id = parseInt(parsedURL.searchParams.get("game_id") ?? "0");
     let game = games[game_id];
     // chyby neexistují
-    res.writeHead(200, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" });
+    res.writeHead(200, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*" });
     main_block: switch (req.method) {
         case "GET": {
             res.write(JSON.stringify(game));
+            break;
+        }
+        case "PUT": {
+            res.write(TEAM_COUNT.toString());
             break;
         }
         case "POST": {
@@ -99,8 +113,25 @@ const handler = async (req, res) => {
                 }
                 case "unfreeze": {
                     freeze = false;
-                    console.log(os_1.default.tmpdir());
+                    //console.log(os.tmpdir());
                     break;
+                }
+                case "setteam": {
+                    let count = parseInt(parsedURL.searchParams.get("count") ?? "0");
+                    TEAM_COUNT = count;
+                    // RESETS (NO BREAK!)
+                }
+                case "reset": {
+                    freeze = true;
+                    games = [];
+                    for (let i = 0; i < TEAM_COUNT; i++) {
+                        games.push(new tetris_1.Game());
+                    }
+                    break;
+                }
+                case "addactions": {
+                    let count = parseInt(parsedURL.searchParams.get("count") ?? "0");
+                    game.actions += count;
                 }
                 case "save": {
                     node_fs_1.default.writeFile(os_1.default.tmpdir() + "\\jamaso.json", JSON.stringify(games), err => {
@@ -125,6 +156,31 @@ const handler = async (req, res) => {
                             games.push(Object.assign(new tetris_1.Game(), content[i]));
                         }
                     });
+                    break;
+                }
+                case "loadauto": {
+                    node_fs_1.default.readFile(os_1.default.tmpdir() + "\\jamasoauto.json", 'utf8', (err, data) => {
+                        if (err) {
+                            console.error(err);
+                            return;
+                        }
+                        let content = JSON.parse(data);
+                        games = [];
+                        for (let i = 0; i < content.length; i++) {
+                            games.push(Object.assign(new tetris_1.Game(), content[i]));
+                        }
+                    });
+                    break;
+                }
+                case "settick": {
+                    let count = parseInt(parsedURL.searchParams.get("count") ?? "0");
+                    TICK_INTERVAL = count;
+                    break;
+                }
+                case "setsave": {
+                    let count = parseInt(parsedURL.searchParams.get("count") ?? "0");
+                    SAVE_INTERVAL += count;
+                    break;
                 }
             }
             break;
