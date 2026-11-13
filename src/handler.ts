@@ -3,14 +3,14 @@ import { Game } from "./tetris";
 import fs from 'node:fs';
 import os from 'os';
 
-let TEAM_COUNT = 4;
+let TEAM_COUNT = 5;
 const UPDATE_INTERVAL = 600;
 let TICK_INTERVAL = 600;
 let freeze = true;
 
 let games: Game[] = (() => {
     let games = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < TEAM_COUNT; i++) {
         games.push(new Game());
     }
     return games;
@@ -26,7 +26,7 @@ setInterval(async () => {
     save_counter += UPDATE_INTERVAL;
 
     if (save_counter >= SAVE_INTERVAL) {
-      tick_counter %= TICK_INTERVAL;
+      save_counter = 0;
       fs.writeFile(os.tmpdir() + "\\jamasoauto.json", JSON.stringify(games), err => {
                         if (err) {
                             console.error(err);
@@ -138,6 +138,7 @@ export const handler = async (req: IncomingMessage, res: ServerResponse) => {
                 case "addactions": {
                     let count = parseInt(parsedURL.searchParams.get("count") ?? "0");
                     game.actions += count;
+                    break;
                 }
                 case "save": {
                     fs.writeFile(os.tmpdir() + "\\jamaso.json", JSON.stringify(games), err => {
